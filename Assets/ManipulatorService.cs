@@ -439,25 +439,59 @@ public class ManipulatorService : MonoBehaviour
         var fldAcidType = GetField<int>(comp, "acidType");
         var fldAcidVol = GetField<int>(comp, "acidVol");
         var fldSolved = GetField<bool>(comp, "_isSolved");
-        if (comp == null || fldAcidType == null || fldAcidVol == null || fldSolved == null)
+        var fldTexts = GetField<TextMesh[]>(comp, "Text", isPublic: true);
+        var fldLiquid = GetField<MeshRenderer>(comp, "liquid", isPublic: true);
+        var fldFilterBtn = GetField<MeshRenderer>(comp, "filterBtn", isPublic: true);
+        var fldActivated = GetField<bool>(comp, "_lightsOn");
+
+        if (comp == null || fldAcidType == null || fldAcidVol == null || fldSolved == null || fldTexts == null || fldLiquid == null || fldFilterBtn == null || fldActivated == null)
             yield break;
 
-        yield return null;
+        while (!fldActivated.Get())
+            yield return new WaitForSeconds(.1f);
 
-        Debug.LogFormat("<Manipulator> Neutralization detected.");
+        fldTexts.Get()[0].text = "NaOH";
+        fldTexts.Get()[1].text = "18";
+        fldTexts.Get()[2].text = "OFF";
+        fldLiquid.Get().gameObject.SetActive(false);
+        fldFilterBtn.Get().material.color = Color.red;
+        module.HandlePass();
+    }
+
+    private static readonly int[] _perspectivePegsColors = new[] { 0, 2, 4, 0, 1, 3, 4, 2, 3, 1 };
+    private static int GetPerspectivePegsColor(string serial)
+    {
+        return _perspectivePegsColors[serial.Where(ch => ch >= 'A' && ch <= 'Z').Split(2).Where(g => g.Count() == 2).Select(g => Math.Abs(g.First() - g.Last())).Sum() % 10];
     }
 
     private IEnumerable<object> ProcessPerspectivePegs(KMBombModule module, int moduleIndex)
     {
         var comp = GetComponent(module, "PerspectivePegsModule");
-        var fldIsComplete = GetField<bool>(comp, "isComplete");
-        var fldEnteredSequence = GetField<List<int>>(comp, "EnteredSequence");
-        if (comp == null || fldIsComplete == null || fldEnteredSequence == null)
+        var fldColourMeshes = GetField<MeshRenderer[,]>(comp, "ColourMeshes");
+        var fldMaterials = GetField<Material[]>(comp, "Mats");
+        var fldModuleID = GetField<int>(comp, "moduleId");
+
+        if (comp == null || fldColourMeshes == null || fldMaterials == null || fldModuleID == null)
             yield break;
+
+        var isActivated = false;
+        module.OnActivate += delegate { isActivated = true; };
+        while (!isActivated)
+            yield return new WaitForSeconds(.1f);
 
         yield return null;
 
-        Debug.LogFormat("<Manipulator> Perspective Pegs detected.");
+        // Materials: 0=red, 1=yellow, 2=green, 3=blue, 4=purple
+        var materials = "RYGBP";
+
+        // Desired arrangement
+        var desired = @"RRYRR,PPRBP,GGGGP,BBYPB,YGYYB".Split(',');
+
+        var ms = fldMaterials.Get();
+        var cms = fldColourMeshes.Get();
+        for (int peg = 0; peg < 5; peg++)
+            for (int patch = 0; patch < 5; patch++)
+                cms[peg, patch].material = ms[materials.IndexOf(desired[peg][patch])];
     }
 
     private IEnumerable<object> ProcessTextField(KMBombModule module, int moduleIndex)
@@ -465,9 +499,8 @@ public class ManipulatorService : MonoBehaviour
         var comp = GetComponent(module, "TextField");
         var fldDisplay = GetField<TextMesh[]>(comp, "ButtonLabels", true);
         var fldActivated = GetField<bool>(comp, "_lightson");
-        var fldSolved = GetField<bool>(comp, "_isSolved");
 
-        if (comp == null || fldDisplay == null || fldActivated == null || fldSolved == null)
+        if (comp == null || fldDisplay == null || fldActivated == null)
             yield break;
 
         while (!fldActivated.Get())

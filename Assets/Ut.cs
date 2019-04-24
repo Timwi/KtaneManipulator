@@ -13,8 +13,6 @@ namespace Manipulator
 {
     static class Ut
     {
-        public static Vector3 SetX(this Vector3 orig, float x) { return new Vector3(x, orig.y, orig.z); }
-
         /// <summary>
         ///     Returns all fields contained in the specified type, including private fields inherited from base classes.</summary>
         /// <param name="type">
@@ -95,9 +93,7 @@ namespace Manipulator
         public static TAttribute GetCustomAttribute<TAttribute>(this MemberInfo member, bool inherit = false) where TAttribute : class
         {
             var attrs = member.GetCustomAttributes(typeof(TAttribute), inherit);
-            if (attrs.Length == 0)
-                return null;
-            return (TAttribute) attrs[0];
+            return attrs.Length == 0 ? null : (TAttribute) attrs[0];
         }
 
         /// <summary>Allows the use of type inference when creating .NET’s KeyValuePair&lt;TK,TV&gt;.</summary>
@@ -146,10 +142,7 @@ namespace Manipulator
                 throw new ArgumentNullException("dic");
             if (key == null)
                 throw new ArgumentNullException("key", "Null values cannot be used for keys in dictionaries.");
-            if (!dic.ContainsKey(key))
-                return (dic[key] = amount);
-            else
-                return (dic[key] = dic[key] + amount);
+            return !dic.ContainsKey(key) ? (dic[key] = amount) : (dic[key] = dic[key] + amount);
         }
 
         /// <summary>
@@ -168,10 +161,7 @@ namespace Manipulator
             if (key == null)
                 throw new ArgumentNullException("key", "Null values cannot be used for keys in dictionaries.");
             TValue value;
-            if (dict.TryGetValue(key, out value))
-                return value;
-            else
-                return defaultVal;
+            return dict.TryGetValue(key, out value) ? value : defaultVal;
         }
 
         public static T[] NewArray<T>(params T[] array) { return array; }
@@ -218,9 +208,7 @@ namespace Manipulator
                 if (!enumerator.MoveNext())
                 {
                     // Optimise the (common) case where there is no prefix/suffix; this prevents an array allocation when calling string.Concat()
-                    if (prefix == null && suffix == null)
-                        return one + lastSeparator + two;
-                    return prefix + one + suffix + lastSeparator + prefix + two + suffix;
+                    return prefix == null && suffix == null ? one + lastSeparator + two : prefix + one + suffix + lastSeparator + prefix + two + suffix;
                 }
 
                 StringBuilder sb = new StringBuilder()
@@ -472,6 +460,31 @@ namespace Manipulator
                 i++;
             }
             return -1;
+        }
+
+        /// <summary>
+        ///     Splits a collection into chunks of equal size. The last chunk may be smaller than <paramref
+        ///     name="chunkSize"/>, but all chunks, if any, will contain at least one item.</summary>
+        public static IEnumerable<IEnumerable<T>> Split<T>(this IEnumerable<T> source, int chunkSize)
+        {
+            if (chunkSize <= 0)
+                throw new ArgumentException("chunkSize must be greater than zero.", "chunkSize");
+            return splitIterator(source, chunkSize);
+        }
+        private static IEnumerable<IEnumerable<T>> splitIterator<T>(this IEnumerable<T> source, int chunkSize)
+        {
+            var list = new List<T>(chunkSize);
+            foreach (var item in source)
+            {
+                list.Add(item);
+                if (list.Count == chunkSize)
+                {
+                    yield return list;
+                    list = new List<T>(chunkSize);
+                }
+            }
+            if (list.Count > 0)
+                yield return list;
         }
     }
 }

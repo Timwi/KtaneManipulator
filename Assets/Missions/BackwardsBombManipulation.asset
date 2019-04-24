@@ -16,7 +16,7 @@ MonoBehaviour:
     Hustle."
   GeneratorSetting:
     TimeLimit: 600
-    NumStrikes: 100
+    NumStrikes: 3
     TimeBeforeNeedyActivation: 90
     FrontFaceOnly: 0
     OptionalWidgetCount: 5
