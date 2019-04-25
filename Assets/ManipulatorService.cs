@@ -406,31 +406,78 @@ public class ManipulatorService : MonoBehaviour
         var fldLedsOrder = GetField<List<int>>(comp, "LEDorder");
         var fldPositionTranslate = GetField<int[]>(comp, "positionTranslate");
 
-        if (comp == null || fldSolved == null || fldLedsOrder == null || fldPositionTranslate == null)
+        var fldBackground = GetField<GameObject>(comp, "Background", isPublic: true);
+        var fldMicBig = GetField<GameObject>(comp, "MicBig", isPublic: true);
+        var fldMicMed = GetField<GameObject>(comp, "MicMed", isPublic: true);
+        var fldMicSmall = GetField<GameObject>(comp, "MicSmall", isPublic: true);
+        var fldBg3 = GetField<Material>(comp, "BG3", isPublic: true);
+        var fldLeds = GetField<GameObject[]>(comp, "LEDS", isPublic: true);
+        var fldDot = GetField<GameObject>(comp, "Dot", isPublic: true);
+        var fldLedMaterials = GetField<Material[]>(comp, "LEDMaterials", isPublic: true);
+        var fldMicSerial = GetField<TextMesh >(comp, "MicSerial", isPublic: true);
+        var fldMicType = GetField<TextMesh >(comp, "MicType", isPublic: true);
+
+        if (comp == null || fldSolved == null || fldLedsOrder == null || fldPositionTranslate == null || fldBackground == null || fldMicBig == null || fldMicMed == null || fldMicSmall == null || fldBg3 == null ||
+            fldLeds == null || fldDot == null || fldLedMaterials == null || fldMicSerial == null || fldMicType == null)
             yield break;
 
-        yield return null;
+        var activated = false;
+        module.OnActivate += delegate { activated = true; };
+        while (!activated)
+            yield return new WaitForSeconds(.1f);
 
-        Debug.LogFormat("<Manipulator> Microcontroller detected.");
+        var background = fldBackground.Get();
+        var micBig = fldMicBig.Get();
+        var micMed = fldMicMed.Get();
+        var micSmall = fldMicSmall.Get();
+        var bg3 = fldBg3.Get();
+        var leds = fldLeds.Get();
+        var dot = fldDot.Get();
+        var ledMaterials = fldLedMaterials.Get();
+
+        background.GetComponent<Renderer>().material = bg3;
+        micBig.GetComponent<Renderer>().enabled = false;
+        micMed.GetComponent<Renderer>().enabled = false;
+        micSmall.GetComponent<Renderer>().enabled = true;
+        leds[6].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[6].transform.Find("Plane").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[7].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[7].transform.Find("Plane").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[8].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[8].transform.Find("Plane").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[9].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().enabled = false;
+        leds[9].transform.Find("Plane").gameObject.GetComponent<Renderer>().enabled = false;
+        dot.transform.localPosition = new Vector3(-0.0004618395f, 0.002604042f, 0.001104411f);
+
+        leds[0].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().material = ledMaterials[5]; // blue
+        leds[2].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().material = ledMaterials[6]; // green
+        leds[4].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().material = ledMaterials[4]; // magenta
+        leds[5].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().material = ledMaterials[2]; // red
+        leds[3].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().material = ledMaterials[3]; // yellow
+        leds[1].transform.Find("Plane.001").gameObject.GetComponent<Renderer>().material = ledMaterials[1]; // white
+
+        fldMicType.Get().text = "EXPL";
+        fldMicSerial.Get().text = "FNX 562-3";
+        module.HandlePass();
     }
 
     private IEnumerable<object> ProcessMurder(KMBombModule module, int moduleIndex)
     {
         var comp = GetComponent(module, "MurderModule");
-        var fldSolved = GetField<bool>(comp, "isSolved");
-        var fldSolution = GetField<int[]>(comp, "solution");
-        var fldNames = GetField<string[,]>(comp, "names");
-        var fldSkipDisplay = GetField<int[,]>(comp, "skipDisplay");
-        var fldSuspects = GetField<int>(comp, "suspects");
-        var fldWeapons = GetField<int>(comp, "weapons");
-        var fldBodyFound = GetField<int>(comp, "bodyFound");
+        var fldActivated = GetField<bool>(comp, "isActivated");
+        var fldDisplays = GetField<TextMesh[]>(comp, "Display", isPublic: true);
 
-        if (comp == null || fldSolved == null || fldSolution == null || fldNames == null || fldSkipDisplay == null || fldSuspects == null || fldWeapons == null || fldBodyFound == null)
+        if (comp == null || fldDisplays == null || fldActivated == null)
             yield break;
 
-        yield return null;
+        while (!fldActivated.Get())
+            yield return new WaitForSeconds(.1f);
 
-        Debug.LogFormat("<Manipulator> Murder detected.");
+        fldDisplays.Get()[0].text = "Reverend Green";
+        fldDisplays.Get()[0].color = new Color(0.1f, 0.8f, 0.1f);
+        fldDisplays.Get()[1].text = "Dagger";
+        fldDisplays.Get()[2].text = "Study";
+        module.HandlePass();
     }
 
     private IEnumerable<object> ProcessNeutralization(KMBombModule module, int moduleIndex)
