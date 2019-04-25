@@ -21,6 +21,7 @@ public class ManipulatorService : MonoBehaviour
     const string _AdventureGame = "spwizAdventureGame";
     const string _Alchemy = "JuckAlchemy";
     const string _Algebra = "algebra";
+    const string _Backgrounds = "Backgrounds";
     const string _BigCircle = "BigCircle";
     const string _BinaryLEDs = "BinaryLeds";
     const string _Bitmaps = "BitmapsModule";
@@ -29,6 +30,7 @@ public class ManipulatorService : MonoBehaviour
     const string _Bulb = "TheBulbModule";
     const string _BurglarAlarm = "burglarAlarm";
     const string _ButtonSequences = "buttonSequencesModule";
+    const string _CaesarCipher = "CaesarCipherModule";
     const string _Calendar = "calendar";
     const string _CheapCheckout = "CheapCheckoutModule";
     const string _Chess = "ChessModule";
@@ -37,9 +39,11 @@ public class ManipulatorService : MonoBehaviour
     const string _ColoredSquares = "ColoredSquaresModule";
     const string _ColoredSwitches = "ColoredSwitchesModule";
     const string _ColorMorse = "ColorMorseModule";
+    const string _ConnectionCheck = "graphModule";
     const string _Coordinates = "CoordinatesModule";
     const string _Crackbox = "CrackboxModule";
     const string _Creation = "CreationModule";
+    const string _Curriculum = "curriculum";
     const string _DoubleOh = "DoubleOhModule";
     const string _FastMath = "fastMath";
     const string _Functions = "qFunctions";
@@ -58,6 +62,7 @@ public class ManipulatorService : MonoBehaviour
     const string _LondonUnderground = "londonUnderground";
     const string _ModuleMaze = "ModuleMaze";
     const string _Mafia = "MafiaModule";
+    const string _Manometers = "manometers";
     const string _MaritimeFlags = "MaritimeFlagsModule";
     const string _Microcontroller = "Microcontroller";
     const string _Minesweeper = "MinesweeperModule";
@@ -75,11 +80,15 @@ public class ManipulatorService : MonoBehaviour
     const string _PatternCube = "PatternCubeModule";
     const string _PerspectivePegs = "spwizPerspectivePegs";
     const string _Planets = "planets";
+    const string _PointOfOrder = "PointOfOrderModule";
     const string _PolyhedralMaze = "PolyhedralMazeModule";
     const string _Probing = "Probing";
     const string _Quintuples = "quintuples";
+    const string _Resistors = "resistors";
     const string _Rhythms = "MusicRhythms";
+    const string _RockPaperScissorsLizardSpock = "RockPaperScissorsLizardSpockModule";
     const string _SchlagDenBomb = "qSchlagDenBomb";
+    const string _Screw = "screw";
     const string _SeaShells = "SeaShells";
     const string _ShapesBombs = "ShapesBombs";
     const string _ShapeShift = "shapeshift";
@@ -118,10 +127,19 @@ public class ManipulatorService : MonoBehaviour
         Debug.LogFormat("<Manipulator> Start()");
         _moduleProcessors = new Dictionary<string, Func<KMBombModule, int, IEnumerable<object>>>()
         {
+            { _Backgrounds, ProcessBackgrounds },
+            { _CaesarCipher, ProcessCaesarCipher },
+            { _ConnectionCheck, ProcessConnectionCheck },
+            { _Curriculum, ProcessCurriculum },
+            { _Manometers, ProcessManometers },
             { _Microcontroller, ProcessMicrocontroller },
             { _Murder, ProcessMurder },
             { _Neutralization, ProcessNeutralization },
             { _PerspectivePegs, ProcessPerspectivePegs },
+            { _PointOfOrder, ProcessPointOfOrder },
+            { _Resistors, ProcessResistors },
+            { _RockPaperScissorsLizardSpock, ProcessRockPaperScissorsLizardSpock },
+            { _Screw, ProcessScrew },
             { _TextField, ProcessTextField }
         };
     }
@@ -343,6 +361,29 @@ public class ManipulatorService : MonoBehaviour
         return new MethodInfo<T>(target, mths[0]);
     }
 
+    private MethodInfo<object> GetMethod(object target, string name, int numParameters, bool isPublic = false)
+    {
+        if (target == null)
+        {
+            Debug.LogFormat("<Manipulator> Attempt to get {1} method {0} with return type void from a null object.", name, isPublic ? "public" : "non-public");
+            return null;
+        }
+        var bindingFlags = (isPublic ? BindingFlags.Public : BindingFlags.NonPublic) | BindingFlags.Instance;
+        var targetType = target.GetType();
+        var mths = targetType.GetMethods(bindingFlags).Where(m => m.Name == name && m.ReturnType == typeof(void) && m.GetParameters().Length == numParameters).Take(2).ToArray();
+        if (mths.Length == 0)
+        {
+            Debug.LogFormat("<Manipulator> Type {0} does not contain {1} method {2} with return type void and {3} parameters.", targetType, isPublic ? "public" : "non-public", name, numParameters);
+            return null;
+        }
+        if (mths.Length > 1)
+        {
+            Debug.LogFormat("<Manipulator> Type {0} contains multiple {1} methods {2} with return type void and {3} parameters.", targetType, isPublic ? "public" : "non-public", name, numParameters);
+            return null;
+        }
+        return new MethodInfo<object>(target, mths[0]);
+    }
+
     private PropertyInfo<T> GetProperty<T>(object target, string name, bool isPublic = false)
     {
         if (target == null)
@@ -399,13 +440,141 @@ public class ManipulatorService : MonoBehaviour
         }
     }
 
+    private IEnumerable<object> ProcessBackgrounds(KMBombModule module, int moduleIndex)
+    {
+        var comp = (MonoBehaviour) GetComponent(module, "Backgrounds");
+        var fldButtonA = GetField<MeshRenderer>(comp, "ButtonAMesh", isPublic: true);
+        var fldBacking = GetField<MeshRenderer>(comp, "BackingMesh", isPublic: true);
+        var fldCounter = GetField<TextMesh>(comp, "CounterText", isPublic: true);
+
+        if (comp == null || fldButtonA == null || fldBacking == null || fldCounter == null)
+            yield break;
+
+        yield return null;
+
+        fldBacking.Get().material.color = new Color(1f, 0.5f, 0f);
+        fldButtonA.Get().material.color = Color.yellow;
+        fldCounter.Get().text = "7";
+        module.HandlePass();
+    }
+
+    private IEnumerable<object> ProcessCaesarCipher(KMBombModule module, int moduleIndex)
+    {
+        var comp = (MonoBehaviour) GetComponent(module, "CaesarCipherModule");
+        var fldButtonLabels = GetField<TextMesh[]>(comp, "ButtonLabels", isPublic: true);
+        var fldDisplayText = GetField<TextMesh>(comp, "DisplayText", isPublic: true);
+
+        if (comp == null || fldButtonLabels == null || fldDisplayText == null)
+            yield break;
+
+        while (fldDisplayText.Get().text == "")
+            yield return new WaitForSeconds(.1f);
+
+        fldDisplayText.Get().text = "AKHDS";
+        for (int i = 0; i < 12; i++)
+            fldButtonLabels.Get()[i].text = "ELTPOBJCIFUM"[i].ToString();
+    }
+
+    private IEnumerable<object> ProcessConnectionCheck(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "GraphModule");
+        var fldL = GetField<GameObject[]>(comp, "L", isPublic: true);
+        var fldR = GetField<GameObject[]>(comp, "R", isPublic: true);
+        var fldLedG = GetField<GameObject[]>(comp, "LEDG", isPublic: true);
+        var fldLedR = GetField<GameObject[]>(comp, "LEDR", isPublic: true);
+        var fldActivated = GetField<bool>(comp, "_lightsOn");
+
+        if (comp == null || fldL == null || fldR == null || fldLedG == null || fldLedR == null || fldActivated == null)
+            yield break;
+
+        yield return null;
+
+        while (!fldActivated.Get())
+            yield return new WaitForSeconds(.1f);
+
+        for (int i = 0; i < 4; i++)
+        {
+            fldL.Get()[i].GetComponentInChildren<TextMesh>().text = "2167"[i].ToString();
+            fldR.Get()[i].GetComponentInChildren<TextMesh>().text = "3235"[i].ToString();
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            fldLedG.Get()[i].SetActive((11 & (1 << i)) != 0);
+            fldLedR.Get()[i].SetActive((11 & (1 << i)) == 0);
+        }
+
+        module.HandlePass();
+    }
+
+    private IEnumerable<object> ProcessCurriculum(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "CurriculumModule");
+        var fldSerial = GetField<string>(comp, "serial");
+        var fldButtons = GetField<KMSelectable[]>(comp, "buttons", isPublic: true);
+        var fldCells = GetField<GameObject[]>(comp, "cells", isPublic: true);
+
+        if (comp == null || fldSerial == null || fldButtons == null || fldCells == null)
+            yield break;
+
+        while (fldSerial.Get(nullAllowed: true) == null)
+            yield return new WaitForSeconds(.1f);
+
+        var labels = "E1,L1,L1,M1,M1".Split(',');
+        for (int i = 0; i < 5; i++)
+            fldButtons.Get()[i].GetComponentInChildren<TextMesh>().text = labels[i];
+
+        for (int i = 0; i < 30; i++)
+        {
+            fldCells.Get()[i].SetActive((0x18018798 & (1 << (29 - i))) != 0);
+            fldCells.Get()[i].GetComponent<MeshRenderer>().material.SetColor("_Color", Color.white);
+        }
+
+        module.HandlePass();
+    }
+
+    private IEnumerable<object> ProcessManometers(KMBombModule module, int moduleIndex)
+    {
+        var comp = (MonoBehaviour) GetComponent(module, "manometers");
+        var fldActivated = GetField<bool>(comp, "_lightsOn");
+        var fldScreen = GetField<MeshRenderer>(comp, "pScreen", isPublic: true);
+        var fldMinus = GetField<MeshRenderer>(comp, "minus", isPublic: true);
+        var fldPlus = GetField<MeshRenderer>(comp, "plus", isPublic: true);
+        var fldScreenText = GetField<TextMesh>(comp, "screenT", isPublic: true);
+        var fldTextT = GetField<TextMesh>(comp, "T", isPublic: true);
+        var fldTextBR = GetField<TextMesh>(comp, "BL", isPublic: true);
+        var fldTextBL = GetField<TextMesh>(comp, "BR", isPublic: true);
+
+        if (comp == null || fldActivated == null || fldMinus == null || fldPlus == null || fldScreenText == null || fldTextT == null || fldTextBL == null || fldTextBR == null)
+            yield break;
+
+        while (!fldActivated.Get())
+            yield return new WaitForSeconds(.1f);
+
+        // Stop the screen from blinking
+        comp.StopCoroutine("blink");
+
+        // Set up screen/+/- button colors
+        fldScreen.Get().material.color = Color.black;
+        fldMinus.Get().material.color = Color.yellow;
+        fldPlus.Get().material.color = Color.blue;
+        fldScreenText.Get().text = "32";
+
+        // Set up the manometers
+        fldTextT.Get().text = "10";
+        fldTextBR.Get().text = "8";
+        fldTextBL.Get().text = "10";
+
+        fldTextT.Get().color = new Color32(226, 43, 11, byte.MaxValue);
+        fldTextBL.Get().color = new Color32(226, 43, 11, byte.MaxValue);
+        fldTextBR.Get().color = new Color32(226, 43, 11, byte.MaxValue);
+
+        module.HandlePass();
+    }
+
     private IEnumerable<object> ProcessMicrocontroller(KMBombModule module, int moduleIndex)
     {
         var comp = GetComponent(module, "Micro");
-        var fldSolved = GetField<int>(comp, "solved");
-        var fldLedsOrder = GetField<List<int>>(comp, "LEDorder");
-        var fldPositionTranslate = GetField<int[]>(comp, "positionTranslate");
-
         var fldBackground = GetField<GameObject>(comp, "Background", isPublic: true);
         var fldMicBig = GetField<GameObject>(comp, "MicBig", isPublic: true);
         var fldMicMed = GetField<GameObject>(comp, "MicMed", isPublic: true);
@@ -414,11 +583,10 @@ public class ManipulatorService : MonoBehaviour
         var fldLeds = GetField<GameObject[]>(comp, "LEDS", isPublic: true);
         var fldDot = GetField<GameObject>(comp, "Dot", isPublic: true);
         var fldLedMaterials = GetField<Material[]>(comp, "LEDMaterials", isPublic: true);
-        var fldMicSerial = GetField<TextMesh >(comp, "MicSerial", isPublic: true);
-        var fldMicType = GetField<TextMesh >(comp, "MicType", isPublic: true);
+        var fldMicSerial = GetField<TextMesh>(comp, "MicSerial", isPublic: true);
+        var fldMicType = GetField<TextMesh>(comp, "MicType", isPublic: true);
 
-        if (comp == null || fldSolved == null || fldLedsOrder == null || fldPositionTranslate == null || fldBackground == null || fldMicBig == null || fldMicMed == null || fldMicSmall == null || fldBg3 == null ||
-            fldLeds == null || fldDot == null || fldLedMaterials == null || fldMicSerial == null || fldMicType == null)
+        if (comp == null || fldBackground == null || fldMicBig == null || fldMicMed == null || fldMicSmall == null || fldBg3 == null || fldLeds == null || fldDot == null || fldLedMaterials == null || fldMicSerial == null || fldMicType == null)
             yield break;
 
         var activated = false;
@@ -505,12 +673,6 @@ public class ManipulatorService : MonoBehaviour
         module.HandlePass();
     }
 
-    private static readonly int[] _perspectivePegsColors = new[] { 0, 2, 4, 0, 1, 3, 4, 2, 3, 1 };
-    private static int GetPerspectivePegsColor(string serial)
-    {
-        return _perspectivePegsColors[serial.Where(ch => ch >= 'A' && ch <= 'Z').Split(2).Where(g => g.Count() == 2).Select(g => Math.Abs(g.First() - g.Last())).Sum() % 10];
-    }
-
     private IEnumerable<object> ProcessPerspectivePegs(KMBombModule module, int moduleIndex)
     {
         var comp = GetComponent(module, "PerspectivePegsModule");
@@ -541,6 +703,89 @@ public class ManipulatorService : MonoBehaviour
                 cms[peg, patch].material = ms[materials.IndexOf(desired[peg][patch])];
     }
 
+    private IEnumerable<object> ProcessPointOfOrder(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "PointOfOrderModule");
+        var fldCardImages = GetField<Texture[]>(comp, "CardImages", isPublic: true);
+
+        if (comp == null || fldCardImages == null)
+            yield break;
+
+        var isActivated = false;
+        module.OnActivate += delegate { isActivated = true; };
+        while (!isActivated)
+            yield return new WaitForSeconds(.1f);
+
+        var cardImages = fldCardImages.Get();
+
+        // A♠ 6♠ 2♣ 6♦ 10♣
+        module.transform.Find("PileCard1").GetComponent<MeshRenderer>().material.mainTexture = cardImages.First(ci => ci.name == "Ace of Spades");
+        module.transform.Find("PileCard2").GetComponent<MeshRenderer>().material.mainTexture = cardImages.First(ci => ci.name == "Six of Spades");
+        module.transform.Find("PileCard3").GetComponent<MeshRenderer>().material.mainTexture = cardImages.First(ci => ci.name == "Two of Clubs");
+        module.transform.Find("PileCard4").GetComponent<MeshRenderer>().material.mainTexture = cardImages.First(ci => ci.name == "Six of Diamonds");
+        module.transform.Find("PileCard5").GetComponent<MeshRenderer>().material.mainTexture = cardImages.First(ci => ci.name == "Ten of Clubs");
+    }
+
+    private IEnumerable<object> ProcessResistors(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "ResistorsModule");
+        var mthDisplay = GetMethod(comp, "DisplayResistor", 7);
+
+        if (comp == null || mthDisplay == null)
+            yield break;
+
+        var activated = false;
+        module.OnActivate += delegate { activated = true; };
+        while (!activated)
+            yield return new WaitForSeconds(.1f);
+
+        mthDisplay.Invoke(66000d, 0, 1, 2, 3, 4, "");
+        mthDisplay.Invoke(330000d, 5, 6, 7, 8, 9, "");
+    }
+
+    private IEnumerable<object> ProcessRockPaperScissorsLizardSpock(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "RockPaperScissorsLizardSpockModule");
+        var fldRock = GetField<Transform>(comp, "Rock", isPublic: true);
+        var fldPaper = GetField<Transform>(comp, "Paper", isPublic: true);
+        var fldScissors = GetField<Transform>(comp, "Scissors", isPublic: true);
+        var fldLizard = GetField<Transform>(comp, "Lizard", isPublic: true);
+        var fldSpock = GetField<Transform>(comp, "Spock", isPublic: true);
+        var fldMatCorrect = GetField<Material>(comp, "MatCorrect", isPublic: true);
+
+        yield return null;
+
+        fldRock.Get().localPosition = new Vector3(0.02830811f, .01506f, 0.04099593f);
+        fldPaper.Get().localPosition = new Vector3(-0.024f, .01506f, 0.079f);
+        fldScissors.Get().localPosition = new Vector3(0.008328188f, .01506f, -0.02049594f);
+        fldLizard.Get().localPosition = new Vector3(-0.07630811f, .01506f, 0.04099593f);
+        fldSpock.Get().localPosition = new Vector3(-0.05632819f, .01506f, -0.02049594f);
+
+        fldRock.Get().GetComponent<MeshRenderer>().material = fldMatCorrect.Get();
+        fldSpock.Get().GetComponent<MeshRenderer>().material = fldMatCorrect.Get();
+        module.HandlePass();
+    }
+
+    private IEnumerable<object> ProcessScrew(KMBombModule module, int moduleIndex)
+    {
+        var comp = (MonoBehaviour) GetComponent(module, "Screw");
+        var fldActivated = GetField<bool>(comp, "_lightsOn");
+        var fldScreenText = GetField<TextMesh>(comp, "screenText", isPublic: true);
+
+        if (comp == null || fldActivated == null || fldScreenText == null)
+            yield break;
+
+        while (!fldActivated.Get())
+            yield return new WaitForSeconds(.1f);
+
+        comp.StartCoroutine("ScrewOut");
+        yield return new WaitForSeconds(1f);
+        GetField<int>(comp, "screwLoc").Set(5);
+        comp.StartCoroutine("ScrewIn");
+        fldScreenText.Get().text = "";
+        module.HandlePass();
+    }
+
     private IEnumerable<object> ProcessTextField(KMBombModule module, int moduleIndex)
     {
         var comp = GetComponent(module, "TextField");
@@ -561,7 +806,5 @@ public class ManipulatorService : MonoBehaviour
 
         for (int i = 0; i < 12; i++)
             displayMeshes[i].text = (i == 1 || i == 11) ? "✓" : "A";
-
-        Debug.LogFormat("<Manipulator> Text Field DONE.");
     }
 }
