@@ -44,6 +44,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Service: {fileID: 114945986338354104}
   GameInfo: {fileID: 114790429723956612}
+  MysteryWidgetPrefab: {fileID: 1106364425617382, guid: 66a2fea6bd1f81141a0efa45e255361e,
+    type: 2}
 --- !u!1001 &100100000
 Prefab:
   m_ObjectHideFlags: 1

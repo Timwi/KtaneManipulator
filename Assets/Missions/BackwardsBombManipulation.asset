@@ -56,12 +56,6 @@ MonoBehaviour:
       ComponentTypes: 
       SpecialComponentType: 0
       ModTypes:
-      - curriculum
-    - Count: 1
-      AllowedSources: 2
-      ComponentTypes: 
-      SpecialComponentType: 0
-      ModTypes:
       - manometers
     - Count: 1
       AllowedSources: 2
@@ -86,12 +80,6 @@ MonoBehaviour:
       ComponentTypes: 
       SpecialComponentType: 0
       ModTypes:
-      - spwizPerspectivePegs
-    - Count: 1
-      AllowedSources: 2
-      ComponentTypes: 
-      SpecialComponentType: 0
-      ModTypes:
       - PointOfOrderModule
     - Count: 1
       AllowedSources: 2
@@ -104,7 +92,7 @@ MonoBehaviour:
       ComponentTypes: 
       SpecialComponentType: 0
       ModTypes:
-      - RockPaperScissorsLizardSpockModule
+      - OnlyConnectModule
     - Count: 1
       AllowedSources: 2
       ComponentTypes: 

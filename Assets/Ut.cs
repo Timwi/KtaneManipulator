@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Manipulator;
-using UnityEngine;
 
 using Rnd = UnityEngine.Random;
 
@@ -22,7 +21,7 @@ namespace Manipulator
         ///     fields inherited from base classes.</returns>
         public static IEnumerable<FieldInfo> GetAllFields(this Type type)
         {
-            IEnumerable<FieldInfo> fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+            IEnumerable<FieldInfo> fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             var baseType = type.BaseType;
             return (baseType == null) ? fields : GetAllFields(baseType).Concat(fields);
         }

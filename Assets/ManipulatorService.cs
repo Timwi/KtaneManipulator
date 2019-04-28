@@ -10,6 +10,7 @@ public class ManipulatorService : MonoBehaviour
 {
     public KMService Service;
     public KMGameInfo GameInfo;
+    public GameObject MysteryWidgetPrefab;
 
     private Dictionary<string, Func<KMBombModule, int, IEnumerable<object>>> _moduleProcessors;
     private Dictionary<string, int> _moduleCounts;
@@ -22,11 +23,13 @@ public class ManipulatorService : MonoBehaviour
     const string _Alchemy = "JuckAlchemy";
     const string _Algebra = "algebra";
     const string _Backgrounds = "Backgrounds";
+    const string _Battleship = "BattleshipModule";
     const string _BigCircle = "BigCircle";
     const string _BinaryLEDs = "BinaryLeds";
     const string _Bitmaps = "BitmapsModule";
     const string _Braille = "BrailleModule";
     const string _BrokenButtons = "BrokenButtonsModule";
+    const string _BrushStrokes = "brushStrokes";
     const string _Bulb = "TheBulbModule";
     const string _BurglarAlarm = "burglarAlarm";
     const string _ButtonSequences = "buttonSequencesModule";
@@ -89,6 +92,7 @@ public class ManipulatorService : MonoBehaviour
     const string _RockPaperScissorsLizardSpock = "RockPaperScissorsLizardSpockModule";
     const string _SchlagDenBomb = "qSchlagDenBomb";
     const string _Screw = "screw";
+    const string _Scripting = "KritScripts";
     const string _SeaShells = "SeaShells";
     const string _ShapesBombs = "ShapesBombs";
     const string _ShapeShift = "shapeshift";
@@ -128,6 +132,8 @@ public class ManipulatorService : MonoBehaviour
         _moduleProcessors = new Dictionary<string, Func<KMBombModule, int, IEnumerable<object>>>()
         {
             { _Backgrounds, ProcessBackgrounds },
+            { _Battleship, ProcessBattleship },
+            { _BrushStrokes, ProcessBrushStrokes },
             { _CaesarCipher, ProcessCaesarCipher },
             { _ConnectionCheck, ProcessConnectionCheck },
             { _Curriculum, ProcessCurriculum },
@@ -135,11 +141,13 @@ public class ManipulatorService : MonoBehaviour
             { _Microcontroller, ProcessMicrocontroller },
             { _Murder, ProcessMurder },
             { _Neutralization, ProcessNeutralization },
+            { _OnlyConnect, ProcessOnlyConnect },
             { _PerspectivePegs, ProcessPerspectivePegs },
             { _PointOfOrder, ProcessPointOfOrder },
             { _Resistors, ProcessResistors },
             { _RockPaperScissorsLizardSpock, ProcessRockPaperScissorsLizardSpock },
             { _Screw, ProcessScrew },
+            { _Scripting, ProcessScripting },
             { _TextField, ProcessTextField }
         };
     }
@@ -166,12 +174,13 @@ public class ManipulatorService : MonoBehaviour
 
         var modules = FindObjectsOfType<KMBombModule>();
         var names = modules.Select(m => m.ModuleDisplayName).OrderBy(m => m).ToArray();
-        var expectedNames = new[] { "Battleship", "Caesar Cipher", "Perspective Pegs", "Point of Order", "Resistors", "Backgrounds", "Brush Strokes", "Brush Strokes", "Connection Check", "Curriculum", "Manometers", "Microcontroller", "Murder", "Neutralization", "Rock-Paper-Scissors-L.-Sp.", "Scripting", "Text Field", "The Screw", }.OrderBy(m => m).ToArray();
+        var expectedNames = new[] { "Battleship", "Caesar Cipher", "Point of Order", "Resistors", "Backgrounds", "Brush Strokes", "Brush Strokes", "Connection Check", "Manometers", "Microcontroller", "Murder", "Neutralization", "Only Connect", "Scripting", "Text Field", "The Screw", }.OrderBy(m => m).ToArray();
         if (names.SequenceEqual(expectedNames))
         {
             // Correct
             for (int i = 0; i < modules.Length; i++)
                 StartCoroutine(ProcessModule(modules[i]));
+            StartCoroutine(RemoveEdgework());
         }
         else
         {
@@ -180,6 +189,48 @@ public class ManipulatorService : MonoBehaviour
         }
 
         _playCoroutine = null;
+    }
+
+    private IEnumerator RemoveEdgework()
+    {
+        yield return new WaitForSeconds(2.5f);
+        var widgetAreaParent = FindObjectOfType<KMBombModule>().transform.parent.Find("WidgetAreas");
+        for (int i = 0; i < widgetAreaParent.childCount; i++)
+        {
+            var widgetArea = widgetAreaParent.GetChild(i);
+
+            for (int j = 0; j < widgetArea.childCount; j++)
+            {
+                var widget = widgetArea.GetChild(j).gameObject;
+                if (widget.name.StartsWith("SerialNumber"))
+                {
+                    var label = widget.transform.Find("SerialText").GetComponent("TextMeshPro");
+                    if (label == null)
+                        Debug.LogFormat("<Manipulator> Serial number: label is null!");
+                    else
+                    {
+                        var prop = label.GetType().GetProperty("text", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (prop == null)
+                            Debug.LogFormat("<Manipulator> Serial number: prop is null!");
+                        else
+                            prop.SetValue(label, "??????", null);
+                    }
+                    Debug.LogFormat("<Manipulator> Serial number processed.");
+                }
+                else if (widget.name.StartsWith("PortWidget") || widget.name.StartsWith("IndicatorWidget") || widget.name.StartsWith("BatteryWidget"))
+                {
+                    Debug.LogFormat("<Manipulator> Object {0} deactivated.", widget.name);
+                    widget.SetActive(false);
+
+                    var newWidget = Instantiate(MysteryWidgetPrefab);
+                    newWidget.transform.parent = widget.transform.parent;
+                    newWidget.transform.localPosition = widget.transform.localPosition;
+                    newWidget.transform.localRotation = widget.transform.localRotation;
+                    newWidget.transform.localScale = widget.transform.localScale;
+                    newWidget.SetActive(true);
+                }
+            }
+        }
     }
 
     sealed class FieldInfo<T>
@@ -446,8 +497,9 @@ public class ManipulatorService : MonoBehaviour
         var fldButtonA = GetField<MeshRenderer>(comp, "ButtonAMesh", isPublic: true);
         var fldBacking = GetField<MeshRenderer>(comp, "BackingMesh", isPublic: true);
         var fldCounter = GetField<TextMesh>(comp, "CounterText", isPublic: true);
+        var fldButtonATextMesh = GetField<TextMesh>(comp, "ButtonATextMesh", isPublic: true);
 
-        if (comp == null || fldButtonA == null || fldBacking == null || fldCounter == null)
+        if (comp == null || fldButtonA == null || fldBacking == null || fldCounter == null || fldButtonATextMesh == null)
             yield break;
 
         yield return null;
@@ -455,7 +507,75 @@ public class ManipulatorService : MonoBehaviour
         fldBacking.Get().material.color = new Color(1f, 0.5f, 0f);
         fldButtonA.Get().material.color = Color.yellow;
         fldCounter.Get().text = "7";
+        fldButtonATextMesh.Get().color = Color.black;
         module.HandlePass();
+    }
+
+    private IEnumerable<object> ProcessBattleship(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "BattleshipModule");
+        var fldRows = GetField<TextMesh[]>(comp, "_rows");
+        var fldColumns = GetField<TextMesh[]>(comp, "_columns");
+        var fldShipLengthLabels = GetField<TextMesh[]>(comp, "ShipLengthLabels", isPublic: true);
+        var fldSolution = GetField<bool[][]>(comp, "_solution");
+
+        while (fldSolution.Get(nullAllowed: true) == null)
+            yield return new WaitForSeconds(.1f);
+
+        for (int i = 0; i < 5; i++)
+            fldRows.Get()[i].text = "13321"[i].ToString();
+        for (int i = 0; i < 5; i++)
+            fldColumns.Get()[i].text = "4O3O3"[i].ToString();
+        for (int i = 0; i < 4; i++)
+            fldShipLengthLabels.Get()[i].text = "×1,×1,1×,1×".Split(',')[i];
+    }
+
+    private IEnumerable<object> ProcessBrushStrokes(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "BrushStrokesScript");
+        var fldHorizontalStrokes = GetField<SpriteRenderer[]>(comp, "horizontalStrokes", isPublic: true);
+        var fldVerticalStrokes = GetField<SpriteRenderer[]>(comp, "verticalStrokes", isPublic: true);
+        var fldTlbrStrokes = GetField<SpriteRenderer[]>(comp, "tlbrStrokes", isPublic: true);
+        var fldTrblStrokes = GetField<SpriteRenderer[]>(comp, "trblStrokes", isPublic: true);
+        var fldBtnRenderers = GetField<MeshRenderer[]>(comp, "btnRenderers", isPublic: true);
+        var fldBtnColors = GetField<Material[]>(comp, "btnColors", isPublic: true);
+        var fldColorblindText = GetField<TextMesh[]>(comp, "colorblindText", isPublic: true);
+        var fldBtnSelectables = GetField<KMSelectable[]>(comp, "btnSelectables", isPublic: true);
+
+        if (comp == null || fldHorizontalStrokes == null || fldVerticalStrokes == null || fldTlbrStrokes == null || fldTrblStrokes == null || fldBtnRenderers == null || fldBtnColors == null || fldColorblindText == null || fldBtnSelectables == null)
+            yield break;
+
+        yield return null;
+
+        var isActivated = false;
+        module.OnActivate += delegate { isActivated = true; };
+        while (!isActivated)
+            yield return new WaitForSeconds(.1f);
+
+        fldBtnRenderers.Get()[4].material = fldBtnColors.Get()[moduleIndex == 0 ? 6 : 3];
+        fldColorblindText.Get()[4].text = "SL"[moduleIndex].ToString();
+
+        fldBtnSelectables.Get()[4].OnInteractEnded = delegate
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                fldHorizontalStrokes.Get()[i].enabled = ((moduleIndex == 0 ? 0x3F : 0x31) & (1 << i)) != 0;
+                fldVerticalStrokes.Get()[i].enabled = ((moduleIndex == 0 ? 0x2D : 0x3F) & (1 << i)) != 0;
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                fldTlbrStrokes.Get()[i].enabled = false;
+                fldTrblStrokes.Get()[i].enabled = false;
+            }
+            foreach (var btn in fldBtnRenderers.Get())
+                btn.material = fldBtnColors.Get()[13];
+
+            for (int i = 0; i < 9; i++)
+                fldColorblindText.Get()[i].text = "SOLVED!!!"[i].ToString();
+
+            module.HandlePass();
+        };
+        fldBtnSelectables.Get()[4].OnInteract = delegate { return false; };
     }
 
     private IEnumerable<object> ProcessCaesarCipher(KMBombModule module, int moduleIndex)
@@ -494,14 +614,18 @@ public class ManipulatorService : MonoBehaviour
 
         for (int i = 0; i < 4; i++)
         {
-            fldL.Get()[i].GetComponentInChildren<TextMesh>().text = "2167"[i].ToString();
-            fldR.Get()[i].GetComponentInChildren<TextMesh>().text = "3235"[i].ToString();
+            //fldL.Get()[i].GetComponentInChildren<TextMesh>().text = "2167"[i].ToString();     // — for 7HPJ
+            //fldR.Get()[i].GetComponentInChildren<TextMesh>().text = "3235"[i].ToString();
+            fldL.Get()[i].GetComponentInChildren<TextMesh>().text = "1245"[i].ToString();     // — for 7HPJ or 8CAKE
+            fldR.Get()[i].GetComponentInChildren<TextMesh>().text = "3587"[i].ToString();
         }
 
         for (int i = 0; i < 4; i++)
         {
-            fldLedG.Get()[i].SetActive((11 & (1 << i)) != 0);
-            fldLedR.Get()[i].SetActive((11 & (1 << i)) == 0);
+            //fldLedG.Get()[i].SetActive((11 & (1 << i)) != 0);   // — for 7HPJ
+            //fldLedR.Get()[i].SetActive((11 & (1 << i)) == 0);
+            fldLedG.Get()[i].SetActive((9 & (1 << i)) != 0);     // — for 7HPJ or 8CAKE
+            fldLedR.Get()[i].SetActive((9 & (1 << i)) == 0);
         }
 
         module.HandlePass();
@@ -509,6 +633,7 @@ public class ManipulatorService : MonoBehaviour
 
     private IEnumerable<object> ProcessCurriculum(KMBombModule module, int moduleIndex)
     {
+        // NO LONGER USED IN THE PUZZLE
         var comp = GetComponent(module, "CurriculumModule");
         var fldSerial = GetField<string>(comp, "serial");
         var fldButtons = GetField<KMSelectable[]>(comp, "buttons", isPublic: true);
@@ -641,10 +766,10 @@ public class ManipulatorService : MonoBehaviour
         while (!fldActivated.Get())
             yield return new WaitForSeconds(.1f);
 
-        fldDisplays.Get()[0].text = "Reverend Green";
-        fldDisplays.Get()[0].color = new Color(0.1f, 0.8f, 0.1f);
-        fldDisplays.Get()[1].text = "Dagger";
-        fldDisplays.Get()[2].text = "Study";
+        fldDisplays.Get()[0].text = "Mrs Peacock";
+        fldDisplays.Get()[0].color = new Color(0.3f, 0.3f, 1f);
+        fldDisplays.Get()[1].text = "Candlestick";
+        fldDisplays.Get()[2].text = "Library";
         module.HandlePass();
     }
 
@@ -673,8 +798,37 @@ public class ManipulatorService : MonoBehaviour
         module.HandlePass();
     }
 
+    private IEnumerable<object> ProcessOnlyConnect(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "OnlyConnectModule");
+        var fldHieroglyphs = GetField<Material[]>(comp, "EgyptianHieroglyphs", isPublic: true);
+        var fldButtons = GetField<KMSelectable[]>(comp, "EgyptianHieroglyphButtons", isPublic: true);
+        var fldTeamName = GetField<TextMesh>(comp, "TeamName", isPublic: true);
+
+        if (comp == null || fldHieroglyphs == null || fldButtons == null || fldTeamName == null)
+            yield break;
+
+        yield return null;
+
+        var isActivated = false;
+        module.OnActivate += delegate { isActivated = true; };
+        while (!isActivated)
+            yield return new WaitForSeconds(.1f);
+
+        // Arrangement: 2R, TF, Ey, HV, Wa, Li
+        fldButtons.Get()[0].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[0];
+        fldButtons.Get()[1].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[2];
+        fldButtons.Get()[2].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[5];
+        fldButtons.Get()[3].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[3];
+        fldButtons.Get()[4].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[4];
+        fldButtons.Get()[5].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[1];
+        fldTeamName.Get().text = "CORPUSCLES";
+    }
+
     private IEnumerable<object> ProcessPerspectivePegs(KMBombModule module, int moduleIndex)
     {
+        // OBSOLETE — no longer used in the puzzle
+
         var comp = GetComponent(module, "PerspectivePegsModule");
         var fldColourMeshes = GetField<MeshRenderer[,]>(comp, "ColourMeshes");
         var fldMaterials = GetField<Material[]>(comp, "Mats");
@@ -730,8 +884,9 @@ public class ManipulatorService : MonoBehaviour
     {
         var comp = GetComponent(module, "ResistorsModule");
         var mthDisplay = GetMethod(comp, "DisplayResistor", 7);
+        var fldBands = GetField<MeshRenderer[]>(comp, "bands", isPublic: true);
 
-        if (comp == null || mthDisplay == null)
+        if (comp == null || mthDisplay == null||fldBands == null )
             yield break;
 
         var activated = false;
@@ -739,12 +894,16 @@ public class ManipulatorService : MonoBehaviour
         while (!activated)
             yield return new WaitForSeconds(.1f);
 
+        foreach (var i in new[] { 1, 3, 6, 8 })
+            fldBands.Get()[i].enabled = true;
         mthDisplay.Invoke(66000d, 0, 1, 2, 3, 4, "");
         mthDisplay.Invoke(330000d, 5, 6, 7, 8, 9, "");
     }
 
     private IEnumerable<object> ProcessRockPaperScissorsLizardSpock(KMBombModule module, int moduleIndex)
     {
+        // OBSOLETE — no longer used in the puzzle (has been replaced with Only Connect)
+
         var comp = GetComponent(module, "RockPaperScissorsLizardSpockModule");
         var fldRock = GetField<Transform>(comp, "Rock", isPublic: true);
         var fldPaper = GetField<Transform>(comp, "Paper", isPublic: true);
@@ -784,6 +943,65 @@ public class ManipulatorService : MonoBehaviour
         comp.StartCoroutine("ScrewIn");
         fldScreenText.Get().text = "";
         module.HandlePass();
+    }
+
+    private IEnumerable<object> ProcessScripting(KMBombModule module, int moduleIndex)
+    {
+        var comp = GetComponent(module, "KritScript");
+        var fldUsingProgram1 = GetField<TextMesh>(comp, "UsingProgram1", isPublic: true);
+        var fldUsingProgram2 = GetField<TextMesh>(comp, "UsingProgram2", isPublic: true);
+        var fldUsingProgram3 = GetField<TextMesh>(comp, "UsingProgram3", isPublic: true);
+        var fldUsingProgram1Value = GetField<string>(comp, "UsingProgram1Value");
+        var fldUsingProgram2Value = GetField<string>(comp, "UsingProgram2Value");
+        var fldUsingProgram3Value = GetField<string>(comp, "UsingProgram3Value");
+        var fldUsing1 = GetField<TextMesh>(comp, "Using1", isPublic: true);
+        var fldUsing2 = GetField<TextMesh>(comp, "Using2", isPublic: true);
+        var fldUsing3 = GetField<TextMesh>(comp, "Using3", isPublic: true);
+        var fldVariableObj = GetField<GameObject>(comp, "VariableObj", isPublic: true);
+        var fldVariable = GetField<TextMesh>(comp, "Variable", isPublic: true);
+        var fldValueObj = GetField<GameObject>(comp, "ValueObj", isPublic: true);
+        var fldVarName = GetField<TextMesh>(comp, "VarName", isPublic: true);
+        var fldCondition = GetField<TextMesh>(comp, "Condition", isPublic: true);
+        var fldVariableTxtMsh = GetField<TextMesh>(comp, "VariableTxtMsh", isPublic: true);
+        var fldVariableValueTxtMsh = GetField<TextMesh>(comp, "VariableValueTxtMsh", isPublic: true);
+        var fldBoolVarPosition = GetField<Vector3>(comp, "BoolVarPosition");
+        var fldActionTxtMsh = GetField<TextMesh>(comp, "ActionTxtMsh", isPublic: true);
+        var fldScriptLines = GetField<GameObject>(comp, "ScriptLines", isPublic: true);
+        var fldStatusCorrect = GetField<GameObject>(comp, "StatusCorrect", isPublic: true);
+        var fldRunBtn = GetField<KMSelectable>(comp, "RunBtn", isPublic: true);
+
+        if (comp == null || fldUsingProgram1 == null || fldUsingProgram2 == null || fldUsingProgram3 == null || fldUsing1 == null || fldUsing2 == null || fldUsing3 == null ||
+                fldVariableObj == null || fldVariableValueTxtMsh == null || fldBoolVarPosition == null || fldActionTxtMsh == null || fldScriptLines == null || fldStatusCorrect == null || fldRunBtn == null)
+            yield break;
+
+        yield return null;
+
+        fldUsingProgram1.Get().color = new Color32(173, 173, 173, 255);
+        fldUsingProgram2.Get().color = new Color32(173, 173, 173, 125);
+        fldUsingProgram3.Get().color = new Color32(173, 173, 173, 255);
+        fldUsing1.Get().color = new Color32(34, 123, 156, 255);
+        fldUsing2.Get().color = new Color32(34, 123, 156, 155);
+        fldUsing3.Get().color = new Color32(34, 123, 156, 255);
+
+        fldVariable.Get().text = "bool";
+        fldVarName.Get().text = "IsLit;";
+        fldCondition.Get().text = "(IsLit)";
+        fldVariableTxtMsh.Get().text = "IsLit = ";
+        fldVariableObj.Get().transform.localPosition = fldBoolVarPosition.Get();
+        fldVariableValueTxtMsh.Get().text = "true<color=#ADADAD>;</color>";
+        fldVariableValueTxtMsh.Get().color = new Color32(34, 123, 156, 255);
+        fldValueObj.Get().transform.localPosition = new Vector3(0.2514f, 0.5100001f, -0.09799998f);
+
+        var hasKtane = fldUsingProgram1Value.Get() == "KTaNE" || fldUsingProgram2Value.Get() == "KTaNE" || fldUsingProgram3Value.Get() == "KTaNE";
+        fldActionTxtMsh.Get().text = hasKtane ? "HandleSolve();" : "HandleStrike();";
+
+        fldRunBtn.Get().OnInteract = delegate
+        {
+            fldScriptLines.Get().SetActive(false);
+            fldStatusCorrect.Get().SetActive(true);
+            module.HandlePass();
+            return false;
+        };
     }
 
     private IEnumerable<object> ProcessTextField(KMBombModule module, int moduleIndex)
