@@ -815,13 +815,13 @@ public class ManipulatorService : MonoBehaviour
         while (!isActivated)
             yield return new WaitForSeconds(.1f);
 
-        // Arrangement: 2R, TF, Ey, HV, Wa, Li
+        // Arrangement: 2R, Li, HV, TF, Wa, Ey
         fldButtons.Get()[0].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[0];
-        fldButtons.Get()[1].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[2];
-        fldButtons.Get()[2].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[5];
-        fldButtons.Get()[3].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[3];
+        fldButtons.Get()[1].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[1];
+        fldButtons.Get()[2].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[3];
+        fldButtons.Get()[3].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[2];
         fldButtons.Get()[4].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[4];
-        fldButtons.Get()[5].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[1];
+        fldButtons.Get()[5].GetComponent<MeshRenderer>().material = fldHieroglyphs.Get()[5];
         fldTeamName.Get().text = "CORPUSCLES";
     }
 
