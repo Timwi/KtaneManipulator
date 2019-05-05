@@ -110,5 +110,5 @@ MonoBehaviour:
       ComponentTypes: 
       SpecialComponentType: 0
       ModTypes:
-      - screw
+      - iceCreamModule
   PacingEventsEnabled: 0

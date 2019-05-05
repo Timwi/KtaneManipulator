@@ -52,7 +52,6 @@ public class ManipulatorService : MonoBehaviour
     const string _Functions = "qFunctions";
     const string _Gamepad = "TheGamepadModule";
     const string _GridLock = "GridlockModule";
-    const string _LogicalButtons = "logicalButtonsModule";
     const string _Hexamaze = "HexamazeModule";
     const string _Hogwarts = "HogwartsModule";
     const string _HumanResources = "HumanResourcesModule";
@@ -61,6 +60,7 @@ public class ManipulatorService : MonoBehaviour
     const string _Kudosudoku = "KudosudokuModule";
     const string _LEDEncryption = "LEDEnc";
     const string _Listening = "Listening";
+    const string _LogicalButtons = "logicalButtonsModule";
     const string _LogicGates = "logicGates";
     const string _LondonUnderground = "londonUnderground";
     const string _ModuleMaze = "ModuleMaze";
@@ -137,6 +137,7 @@ public class ManipulatorService : MonoBehaviour
             { _CaesarCipher, ProcessCaesarCipher },
             { _ConnectionCheck, ProcessConnectionCheck },
             { _Curriculum, ProcessCurriculum },
+            { _IceCream, ProcessIceCream },
             { _Manometers, ProcessManometers },
             { _Microcontroller, ProcessMicrocontroller },
             { _Murder, ProcessMurder },
@@ -174,7 +175,7 @@ public class ManipulatorService : MonoBehaviour
 
         var modules = FindObjectsOfType<KMBombModule>();
         var names = modules.Select(m => m.ModuleDisplayName).OrderBy(m => m).ToArray();
-        var expectedNames = new[] { "Battleship", "Caesar Cipher", "Point of Order", "Resistors", "Backgrounds", "Brush Strokes", "Brush Strokes", "Connection Check", "Manometers", "Microcontroller", "Murder", "Neutralization", "Only Connect", "Scripting", "Text Field", "The Screw", }.OrderBy(m => m).ToArray();
+        var expectedNames = new[] { "Battleship", "Caesar Cipher", "Point of Order", "Resistors", "Backgrounds", "Brush Strokes", "Brush Strokes", "Connection Check", "Ice Cream", "Manometers", "Microcontroller", "Murder", "Neutralization", "Only Connect", "Scripting", "Text Field" }.OrderBy(m => m).ToArray();
         if (names.SequenceEqual(expectedNames))
         {
             // Correct
@@ -658,6 +659,37 @@ public class ManipulatorService : MonoBehaviour
         module.HandlePass();
     }
 
+    private IEnumerable<object> ProcessIceCream(KMBombModule module, int moduleIndex)
+    {
+        var comp = (MonoBehaviour) GetComponent(module, "IceCreamModule");
+        var fldScoops = GetField<GameObject[]>(comp, "Scoops", isPublic: true);
+        var fldCustomerLabel = GetField<TextMesh>(comp, "CustomerLabel", isPublic: true);
+        var fldFlavourLabel = GetField<TextMesh>(comp, "FlavourLabel", isPublic: true);
+        var fldFlavourMaterials = GetField<Material[]>(comp, "FlavourMaterials", isPublic: true);
+
+        if (comp == null || fldScoops == null || fldCustomerLabel == null || fldFlavourLabel == null)
+            yield break;
+
+        yield return new WaitForSeconds(1f);
+
+        var isActivated = false;
+        module.OnActivate += delegate { isActivated = true; };
+        while (!isActivated)
+            yield return new WaitForSeconds(.1f);
+
+        var scoopMaterialIxs = new List<int> { 0, 1, 5 };
+        foreach (var scoop in fldScoops.Get())
+        {
+            scoop.SetActive(true);
+            scoop.GetComponent<MeshRenderer>().sharedMaterial = fldFlavourMaterials.Get()[scoopMaterialIxs[0]];
+            scoopMaterialIxs.RemoveAt(0);
+        }
+
+        fldCustomerLabel.Get().text = "Pat";
+        fldFlavourLabel.Get().text = "Cookies and Cream";
+        module.HandlePass();
+    }
+
     private IEnumerable<object> ProcessManometers(KMBombModule module, int moduleIndex)
     {
         var comp = (MonoBehaviour) GetComponent(module, "manometers");
@@ -783,8 +815,9 @@ public class ManipulatorService : MonoBehaviour
         var fldLiquid = GetField<MeshRenderer>(comp, "liquid", isPublic: true);
         var fldFilterBtn = GetField<MeshRenderer>(comp, "filterBtn", isPublic: true);
         var fldActivated = GetField<bool>(comp, "_lightsOn");
+        var fldColorText = GetField<GameObject>(comp, "colorText", isPublic: true);
 
-        if (comp == null || fldAcidType == null || fldAcidVol == null || fldSolved == null || fldTexts == null || fldLiquid == null || fldFilterBtn == null || fldActivated == null)
+        if (comp == null || fldAcidType == null || fldAcidVol == null || fldSolved == null || fldTexts == null || fldLiquid == null || fldFilterBtn == null || fldActivated == null || fldColorText == null)
             yield break;
 
         while (!fldActivated.Get())
@@ -795,6 +828,7 @@ public class ManipulatorService : MonoBehaviour
         fldTexts.Get()[2].text = "OFF";
         fldLiquid.Get().gameObject.SetActive(false);
         fldFilterBtn.Get().material.color = Color.red;
+        fldColorText.Get().SetActive(false);
         module.HandlePass();
     }
 
